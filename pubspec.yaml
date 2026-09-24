@@ -1,0 +1,73 @@
+name: my_doc_wallet
+description: "MyDoc Wallet — A private personal document organizer for Android."
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.4
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  provider: ^6.1.4
+
+  # Navigation
+  go_router: ^18.0.1
+
+  # Database
+  sqflite: ^2.4.2
+  path_provider: ^2.1.5
+  path: ^1.9.1
+
+  # Security
+  flutter_secure_storage: ^11.2.0
+  encrypt: ^5.0.3
+  local_auth: ^3.0.2
+  crypto: ^3.0.6
+
+  # Documents
+  file_picker: ^13.1.0
+  cunning_document_scanner: ^3.0.3
+  pdf: ^3.13.0
+  pdfrx: ^2.6.5
+  image: ^4.5.3
+
+  # OCR
+  google_mlkit_text_recognition: ^0.17.1
+
+  # Notifications
+  flutter_local_notifications: ^22.3.1
+
+  # Sharing & Export
+  share_plus: ^13.3.0
+  printing: ^5.14.2
+
+  # Utilities
+  intl: ^0.20.2
+  uuid: ^4.5.1
+  collection: ^1.19.1
+  image_picker: ^1.1.2
+  permission_handler: ^13.0.2
+  timezone: ^0.11.1
+  url_launcher: ^6.3.1
+  package_info_plus: ^10.2.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/branding/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/branding/mydoc_wallet_logo.png"
+  min_sdk_android: 21
