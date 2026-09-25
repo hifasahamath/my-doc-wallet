@@ -2,23 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 
-import 'package:my_doc_wallet/core/utils/file_utils.dart';
 import 'package:my_doc_wallet/providers/category_provider.dart';
 import 'package:my_doc_wallet/providers/document_provider.dart';
 
-/// Screen for adding or editing document metadata.
+/// Screen for editing document metadata.
+///
+/// This screen is used ONLY for editing existing documents (via the
+/// "Edit" action in document details). Initial document import/scan
+/// no longer navigates here — documents are imported directly.
 class AddEditDocumentScreen extends StatefulWidget {
   final String? documentId;
-  final String? sourceFilePath; // Used when importing a new file
-  final List<String>? scannedImagePaths; // Used when coming from scanner
-  final String? defaultCategoryId; // Pre-select category
 
   const AddEditDocumentScreen({
     super.key,
     this.documentId,
-    this.sourceFilePath,
-    this.scannedImagePaths,
-    this.defaultCategoryId,
   });
 
   @override
@@ -67,22 +64,6 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
           _expiryDate = doc.expiryDate;
         });
       }
-    } else {
-      String initialName = '';
-      if (widget.sourceFilePath != null) {
-        initialName = FileUtils.titleFromFilename(widget.sourceFilePath!);
-      } else if (widget.scannedImagePaths != null && widget.scannedImagePaths!.isNotEmpty) {
-        initialName = 'Scanned Document';
-      }
-
-      setState(() {
-        _nameCtrl.text = initialName;
-        if (widget.defaultCategoryId != null) {
-          _selectedCategoryId = widget.defaultCategoryId;
-        } else if (catProvider.categories.isNotEmpty) {
-          _selectedCategoryId = catProvider.categories.first.id;
-        }
-      });
     }
   }
 
@@ -120,7 +101,6 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
     
     try {
       if (widget.documentId != null) {
-        // Edit existing
         final doc = await provider.getDocument(widget.documentId!);
         if (doc != null) {
           final updated = doc.copyWith(
@@ -134,30 +114,6 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
           await provider.updateDocument(updated);
           await provider.setTags(updated.id, tags);
         }
-      } else if (widget.sourceFilePath != null) {
-        // New from import
-        await provider.importFile(
-          sourcePath: widget.sourceFilePath!,
-          name: _nameCtrl.text.trim(),
-          categoryId: _selectedCategoryId!,
-          documentNumber: _docNumCtrl.text.trim().isEmpty ? null : _docNumCtrl.text.trim(),
-          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          issueDate: _issueDate,
-          expiryDate: _expiryDate,
-          tags: tags,
-        );
-      } else if (widget.scannedImagePaths != null) {
-        // New from scanner
-        await provider.createFromScan(
-          imagePaths: widget.scannedImagePaths!,
-          name: _nameCtrl.text.trim(),
-          categoryId: _selectedCategoryId!,
-          documentNumber: _docNumCtrl.text.trim().isEmpty ? null : _docNumCtrl.text.trim(),
-          notes: _notesCtrl.text.trim().isEmpty ? null : _notesCtrl.text.trim(),
-          issueDate: _issueDate,
-          expiryDate: _expiryDate,
-          tags: tags,
-        );
       }
       
       if (mounted) context.pop();
@@ -175,7 +131,7 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.documentId == null ? 'Save Document' : 'Edit Document'),
+        title: const Text('Edit Document'),
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
@@ -248,7 +204,7 @@ class _AddEditDocumentScreenState extends State<AddEditDocumentScreen> {
                     onPressed: _save,
                     child: const Padding(
                       padding: EdgeInsets.all(16.0),
-                      child: Text('Save Document'),
+                      child: Text('Save Changes'),
                     ),
                   ),
                 ],

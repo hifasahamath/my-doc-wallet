@@ -79,45 +79,6 @@ class _MyDocWalletAppState extends State<MyDocWalletApp> {
           builder: (context, state) => const LockScreen(),
         ),
         GoRoute(
-          path: '/add-document',
-          builder: (context, state) {
-            final extra = state.extra as Map<String, dynamic>?;
-            return AddEditDocumentScreen(
-              defaultCategoryId: extra?['categoryId'] as String?,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/add-document-scan',
-          builder: (context, state) {
-            final extra = state.extra;
-            if (extra is Map<String, dynamic>) {
-              return AddEditDocumentScreen(
-                scannedImagePaths: extra['paths'] as List<String>?,
-                defaultCategoryId: extra['categoryId'] as String?,
-              );
-            }
-            return AddEditDocumentScreen(
-              scannedImagePaths: extra as List<String>?,
-            );
-          },
-        ),
-        GoRoute(
-          path: '/add-document-file',
-          builder: (context, state) {
-            final extra = state.extra;
-            if (extra is Map<String, dynamic>) {
-              return AddEditDocumentScreen(
-                sourceFilePath: extra['path'] as String?,
-                defaultCategoryId: extra['categoryId'] as String?,
-              );
-            }
-            return AddEditDocumentScreen(
-              sourceFilePath: extra as String?,
-            );
-          },
-        ),
-        GoRoute(
           path: '/edit-document/:id',
           builder: (context, state) =>
               AddEditDocumentScreen(documentId: state.pathParameters['id']),

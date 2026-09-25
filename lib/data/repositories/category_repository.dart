@@ -26,13 +26,19 @@ class CategoryRepository {
   }
 
   Future<Category> createCustom(String name, String iconName, int color) async {
+    // Assign sort_order after the current maximum
+    final db = await DatabaseHelper.instance.database;
+    final maxOrder = (await db.rawQuery(
+      'SELECT MAX(sort_order) as m FROM categories',
+    )).first['m'] as int? ?? 0;
+
     final cat = Category(
       id: _uuid.v4(),
       name: name,
       iconName: iconName,
       color: color,
       isCustom: true,
-      sortOrder: 100,
+      sortOrder: maxOrder + 1,
     );
     await insert(cat);
     return cat;
@@ -44,8 +50,25 @@ class CategoryRepository {
         where: 'id = ?', whereArgs: [category.id]);
   }
 
+  /// Delete any category (built-in or custom).
+  /// Callers must handle moving documents BEFORE calling this.
   Future<void> delete(String id) async {
     final db = await DatabaseHelper.instance.database;
-    await db.delete('categories', where: 'id = ? AND is_custom = 1', whereArgs: [id]);
+    await db.delete('categories', where: 'id = ?', whereArgs: [id]);
+  }
+
+  /// Persist the display order for all categories.
+  Future<void> reorder(List<String> orderedIds) async {
+    final db = await DatabaseHelper.instance.database;
+    final batch = db.batch();
+    for (var i = 0; i < orderedIds.length; i++) {
+      batch.update(
+        'categories',
+        {'sort_order': i},
+        where: 'id = ?',
+        whereArgs: [orderedIds[i]],
+      );
+    }
+    await batch.commit(noResult: true);
   }
 }

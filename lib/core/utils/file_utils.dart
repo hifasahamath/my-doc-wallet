@@ -26,7 +26,7 @@ class FileUtils {
 
   /// Whether [path] points to an image file.
   static bool isImage(String path) {
-    const imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif'};
+    const imageExtensions = {'jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'heic', 'heif'};
     return imageExtensions.contains(extension(path));
   }
 

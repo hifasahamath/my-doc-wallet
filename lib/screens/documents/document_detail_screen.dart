@@ -47,7 +47,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     if (doc != null && mounted) {
       // Decrypt to temp file for viewing
       try {
-        final ext = doc.fileType == 'pdf' ? 'pdf' : 'jpg';
+        final ext = doc.fileType.isNotEmpty ? doc.fileType : 'unknown';
         _tempFilePath = await context.read<FileStorageService>().decryptToTemp(doc.filePath, 'temp_view_${doc.id}.$ext');
       } catch (e) {
         // Handle error
@@ -188,9 +188,10 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
       return const Center(child: Icon(Icons.error, size: 48, color: Colors.grey));
     }
     
-    if (_document!.fileType == 'pdf') {
-      // In a real app we'd use pdfrx or similar here. 
-      // For now, placeholder indicating PDF is ready
+    final ft = _document!.fileType.toLowerCase();
+    
+    if (ft == 'pdf') {
+      // Placeholder indicating PDF is ready
       return const Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -201,11 +202,32 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ],
         ),
       );
-    } else {
+    } else if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'heic', 'heif'].contains(ft)) {
       return InteractiveViewer(
         child: Image.file(
           File(_tempFilePath!),
           fit: BoxFit.contain,
+        ),
+      );
+    } else {
+      // Unsupported direct preview format
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(Icons.insert_drive_file, size: 64, color: Colors.grey),
+            const SizedBox(height: 16),
+            Text('Preview not available for .$ft files', style: const TextStyle(color: Colors.grey)),
+            const SizedBox(height: 24),
+            OutlinedButton.icon(
+              onPressed: () async {
+                final displayName = '${_document!.name.replaceAll(' ', '_')}.$ft';
+                await context.read<ExportService>().shareDocument(_document!.filePath, displayName);
+              },
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('Open with external app'),
+            ),
+          ],
         ),
       );
     }

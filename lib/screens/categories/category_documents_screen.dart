@@ -1,12 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
+import 'package:my_doc_wallet/core/utils/file_utils.dart';
 import 'package:my_doc_wallet/data/models/document.dart';
 import 'package:my_doc_wallet/providers/document_provider.dart';
 import 'package:my_doc_wallet/providers/category_provider.dart';
+import 'package:my_doc_wallet/providers/dashboard_provider.dart';
+import 'package:my_doc_wallet/services/import_service.dart';
 import 'package:my_doc_wallet/widgets/document_grid_card.dart';
 import 'package:my_doc_wallet/widgets/empty_state.dart';
+import 'package:my_doc_wallet/widgets/import_metadata_dialog.dart';
 
 /// Screen listing documents for a specific category.
 class CategoryDocumentsScreen extends StatefulWidget {
@@ -26,6 +31,7 @@ class CategoryDocumentsScreen extends StatefulWidget {
 class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
   List<Document> _documents = [];
   bool _isLoading = true;
+  late String _displayName;
   
   final Set<String> _selectedIds = {};
   bool get _isSelectionMode => _selectedIds.isNotEmpty;
@@ -33,6 +39,7 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
   @override
   void initState() {
     super.initState();
+    _displayName = widget.categoryName;
     _loadDocuments();
   }
 
@@ -99,11 +106,20 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
               padding: EdgeInsets.all(16.0),
               child: Text('Move to Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            ...categories.map((c) => ListTile(
-              leading: Icon(Icons.folder, color: Color(c.color)),
-              title: Text(c.name),
-              onTap: () => Navigator.pop(context, c.id),
-            )),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final c = categories[index];
+                  return ListTile(
+                    leading: Icon(Icons.folder, color: Color(c.color)),
+                    title: Text(c.name),
+                    onTap: () => Navigator.pop(context, c.id),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
@@ -117,7 +133,7 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
   }
 
   Future<void> _renameCategory() async {
-    final ctrl = TextEditingController(text: widget.categoryName);
+    final ctrl = TextEditingController(text: _displayName);
     final newName = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
@@ -146,60 +162,76 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
       final provider = context.read<CategoryProvider>();
       final category = provider.categories.firstWhere((c) => c.id == widget.categoryId);
       await provider.updateCategory(category.copyWith(name: newName));
-      // In a real app we'd update the UI title, here it's static in the state widget.
-      // Easiest is to pop back and let the list refresh.
-      if (mounted) context.pop();
+      setState(() => _displayName = newName);
     }
   }
 
   Future<void> _deleteCategory() async {
     final categories = context.read<CategoryProvider>().categories.where((c) => c.id != widget.categoryId).toList();
     
-    String? moveToId;
     if (_documents.isNotEmpty) {
-      moveToId = await showDialog<String>(
+      final result = await showDialog<String>(
         context: context,
         builder: (context) {
-          String? selectedId = categories.isNotEmpty ? categories.first.id : null;
-          return StatefulBuilder(
-            builder: (context, setState) {
-              return AlertDialog(
-                title: const Text('Delete Category'),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('This category contains documents. Please select a category to move them to before deleting:'),
-                    const SizedBox(height: 16),
-                    DropdownButtonFormField<String>(
-                      initialValue: selectedId,
-                      items: categories.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
-                      onChanged: (val) => setState(() => selectedId = val),
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
-                    ),
-                  ],
-                ),
-                actions: [
-                  TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-                  FilledButton(
-                    style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
-                    onPressed: () => Navigator.pop(context, selectedId),
-                    child: const Text('Move & Delete'),
-                  ),
-                ],
-              );
-            }
+          return AlertDialog(
+            title: Text('Delete "$_displayName"?'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('This category contains ${_documents.length} document(s).'),
+                const SizedBox(height: 8),
+                const Text('What would you like to do with these documents?'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Cancel'),
+              ),
+              OutlinedButton(
+                onPressed: () {
+                  // Move to "Other" category if it exists, or the first available
+                  final otherCat = categories.firstWhere(
+                    (c) => c.id == 'uncategorized' || c.name.toLowerCase() == 'uncategorized',
+                    orElse: () => categories.first,
+                  );
+                  Navigator.pop(context, otherCat.id);
+                },
+                child: const Text('Move to Other'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(backgroundColor: Theme.of(context).colorScheme.error),
+                onPressed: () => Navigator.pop(context, '__delete_all__'),
+                child: const Text('Delete Category and Documents'),
+              ),
+            ],
           );
         },
       );
       
-      if (moveToId == null) return; // User cancelled
+      if (result == null || !mounted) return;
+
+      if (result == '__delete_all__') {
+        // Delete all documents first, then the category
+        if (!mounted) return;
+        await context.read<DocumentProvider>().deleteDocuments(
+          _documents.map((d) => d.id).toList(),
+        );
+        if (!mounted) return;
+        await context.read<CategoryProvider>().deleteCategory(widget.categoryId);
+      } else {
+        // Move docs to selected category, then delete
+        if (!mounted) return;
+        await context.read<CategoryProvider>().deleteCategory(widget.categoryId, moveDocumentsTo: result);
+      }
+      if (mounted) context.pop();
     } else {
       final confirm = await showDialog<bool>(
         context: context,
         builder: (context) => AlertDialog(
-          title: const Text('Delete Category'),
-          content: const Text('Are you sure you want to delete this empty category?'),
+          title: Text('Delete "$_displayName"?'),
+          content: const Text('This category is empty and will be deleted.'),
           actions: [
             TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
             FilledButton(
@@ -211,18 +243,17 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
         ),
       );
       if (confirm != true) return;
-    }
-
-    if (mounted) {
-      await context.read<CategoryProvider>().deleteCategory(widget.categoryId, moveDocumentsTo: moveToId);
-      if (mounted) context.pop();
+      if (mounted) {
+        await context.read<CategoryProvider>().deleteCategory(widget.categoryId);
+        if (mounted) context.pop();
+      }
     }
   }
 
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
+      builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -231,8 +262,8 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
               title: const Text('Scan Document'),
               subtitle: const Text('Scan and save into this category'),
               onTap: () {
-                Navigator.pop(context);
-                context.push('/add-document-scan', extra: {'categoryId': widget.categoryId});
+                Navigator.pop(ctx);
+                _handleScan(context);
               },
             ),
             ListTile(
@@ -240,8 +271,8 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
               title: const Text('Import File'),
               subtitle: const Text('Import PDF/image into this category'),
               onTap: () {
-                Navigator.pop(context);
-                context.push('/add-document-file', extra: {'categoryId': widget.categoryId});
+                Navigator.pop(ctx);
+                _handleImport(context);
               },
             ),
           ],
@@ -250,14 +281,184 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
     );
   }
 
+  /// Import a file directly into this category — no form.
+  Future<void> _handleImport(BuildContext context) async {
+    final importService = context.read<ImportService>();
+    final docProvider = context.read<DocumentProvider>();
+
+    try {
+      final path = await importService.pickFile();
+      if (path == null) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      final generatedTitle = FileUtils.titleFromFilename(path);
+
+      final metadata = await ImportMetadataDialog.show(
+        context,
+        initialTitle: generatedTitle,
+        initialCategoryId: widget.categoryId,
+      );
+      if (metadata == null) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      final title = metadata['title'] as String? ?? generatedTitle;
+      final selectedCategory = metadata['categoryId'] as String? ?? 'uncategorized';
+      final expiryDate = metadata['expiryDate'] as DateTime?;
+
+      _showLoading(context, 'Importing document...');
+
+      final newDoc = await docProvider.importFile(
+        sourcePath: path,
+        name: title,
+        categoryId: selectedCategory,
+      );
+
+      if (expiryDate != null) {
+        await docProvider.updateDocument(newDoc.copyWith(expiryDate: expiryDate));
+      }
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading
+        _loadDocuments();
+        context.read<DashboardProvider>().loadDashboard();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"$title" imported into $_displayName')),
+        );
+      }
+    } on ImportException catch (e) {
+      if (context.mounted) {
+        try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
+        if (e.isPermanentlyDenied) {
+          _showPermissionDeniedDialog(context, e.message);
+        } else {
+          _showError(context, e.message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
+        _showError(context, 'Failed to import document: $e');
+      }
+    }
+  }
+
+  /// Scan a document directly into this category — no form.
+  Future<void> _handleScan(BuildContext context) async {
+    final importService = context.read<ImportService>();
+    final docProvider = context.read<DocumentProvider>();
+
+    try {
+      final paths = await importService.scanDocuments();
+      if (paths == null || paths.isEmpty) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      final metadata = await ImportMetadataDialog.show(
+        context,
+        initialTitle: 'Scanned Document',
+        initialCategoryId: widget.categoryId,
+      );
+      if (metadata == null) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      final title = metadata['title'] as String? ?? 'Scanned Document';
+      final selectedCategory = metadata['categoryId'] as String? ?? 'uncategorized';
+      final expiryDate = metadata['expiryDate'] as DateTime?;
+
+      _showLoading(context, 'Saving scanned document...');
+
+      final newDoc = await docProvider.createFromScan(
+        imagePaths: paths,
+        name: title,
+        categoryId: selectedCategory,
+      );
+
+      if (expiryDate != null) {
+        await docProvider.updateDocument(newDoc.copyWith(expiryDate: expiryDate));
+      }
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading
+        _loadDocuments();
+        context.read<DashboardProvider>().loadDashboard();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Scanned document saved to $_displayName')),
+        );
+      }
+    } on ImportException catch (e) {
+      if (context.mounted) {
+        if (e.isPermanentlyDenied) {
+          _showPermissionDeniedDialog(context, e.message);
+        } else {
+          _showError(context, e.message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        try { Navigator.of(context, rootNavigator: true).pop(); } catch (_) {}
+        _showError(context, 'Failed to scan document: $e');
+      }
+    }
+  }
+
+  void _showLoading(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 24),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
-    // Check if category is a default/built-in category (usually they have isCustom = false)
-    final catProvider = context.watch<CategoryProvider>();
-    final isCustom = catProvider.categories.any((c) => c.id == widget.categoryId && c.isCustom);
-    
     final provider = context.watch<DocumentProvider>();
 
     return Scaffold(
@@ -282,7 +483,7 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
               ],
             )
           : AppBar(
-              title: Text(widget.categoryName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
+              title: Text(_displayName, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
               actions: [
                 PopupMenuButton<DocumentSortOption>(
                   icon: const Icon(Icons.sort),
@@ -298,7 +499,7 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
                     PopupMenuItem(value: DocumentSortOption.expiryDateAsc, child: Text('Expiry Date')),
                   ],
                 ),
-                if (isCustom)
+                if (widget.categoryId != 'uncategorized')
                   PopupMenuButton<String>(
                     onSelected: (val) {
                       if (val == 'rename') _renameCategory();

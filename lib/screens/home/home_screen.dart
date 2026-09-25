@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 
+import 'package:my_doc_wallet/core/utils/file_utils.dart';
 import 'package:my_doc_wallet/providers/auth_provider.dart';
+
+import 'package:my_doc_wallet/providers/dashboard_provider.dart';
+import 'package:my_doc_wallet/providers/document_provider.dart';
 import 'package:my_doc_wallet/screens/home/dashboard_tab.dart';
 import 'package:my_doc_wallet/screens/documents/documents_list_screen.dart';
 import 'package:my_doc_wallet/screens/categories/categories_screen.dart';
 import 'package:my_doc_wallet/screens/settings/settings_screen.dart';
 import 'package:my_doc_wallet/services/import_service.dart';
+import 'package:my_doc_wallet/widgets/import_metadata_dialog.dart';
 
 /// Main shell with bottom navigation.
 class HomeScreen extends StatefulWidget {
@@ -86,7 +91,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
-      builder: (context) => SafeArea(
+      builder: (ctx) => SafeArea(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -94,30 +99,210 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
               leading: const Icon(Icons.document_scanner_outlined),
               title: const Text('Scan Document'),
               subtitle: const Text('Use camera to scan physical documents'),
-              onTap: () async {
-                Navigator.pop(context);
-                final service = context.read<ImportService>();
-                final paths = await service.scanDocuments();
-                if (paths != null && paths.isNotEmpty && context.mounted) {
-                  context.push('/add-document-scan', extra: paths);
-                }
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleScan(context, categoryId: null);
               },
             ),
             ListTile(
               leading: const Icon(Icons.file_upload_outlined),
               title: const Text('Import File'),
               subtitle: const Text('Import PDF or image from your device'),
-              onTap: () async {
-                Navigator.pop(context);
-                final service = context.read<ImportService>();
-                final path = await service.pickFile();
-                if (path != null && context.mounted) {
-                  context.push('/add-document-file', extra: path);
-                }
+              onTap: () {
+                Navigator.pop(ctx);
+                _handleImport(context, categoryId: null);
               },
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  /// Import a file directly — no form. The first available category is used
+  /// when no [categoryId] is provided.
+  Future<void> _handleImport(BuildContext context, {String? categoryId}) async {
+    final importService = context.read<ImportService>();
+    final docProvider = context.read<DocumentProvider>();
+    final dashProvider = context.read<DashboardProvider>();
+
+    try {
+      final path = await importService.pickFile();
+      if (path == null) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      // Determine category (null means Uncategorized)
+      final effectiveCategoryId = categoryId;
+      final generatedTitle = FileUtils.titleFromFilename(path);
+
+      final metadata = await ImportMetadataDialog.show(
+        context,
+        initialTitle: generatedTitle,
+        initialCategoryId: effectiveCategoryId,
+      );
+      if (metadata == null) return; // User cancelled dialog
+
+      if (!context.mounted) return;
+
+      final title = metadata['title'] as String? ?? generatedTitle;
+      final selectedCategory = metadata['categoryId'] as String? ?? 'uncategorized';
+      final expiryDate = metadata['expiryDate'] as DateTime?;
+
+      // Show a brief loading indicator
+      _showLoading(context, 'Importing document...');
+
+      final newDoc = await docProvider.importFile(
+        sourcePath: path,
+        name: title,
+        categoryId: selectedCategory,
+      );
+      
+      if (expiryDate != null) {
+        await docProvider.updateDocument(newDoc.copyWith(expiryDate: expiryDate));
+      }
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading
+        dashProvider.loadDashboard();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('"$title" imported successfully')),
+        );
+      }
+    } on ImportException catch (e) {
+      if (context.mounted) {
+        // Dismiss loading if it was shown
+        Navigator.of(context, rootNavigator: true).pop();
+        if (e.isPermanentlyDenied) {
+          _showPermissionDeniedDialog(context, e.message);
+        } else {
+          _showError(context, e.message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        // Try to dismiss loading
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+        _showError(context, 'Failed to import document: $e');
+      }
+    }
+  }
+
+  /// Scan a document directly — no form.
+  Future<void> _handleScan(BuildContext context, {String? categoryId}) async {
+    final importService = context.read<ImportService>();
+    final docProvider = context.read<DocumentProvider>();
+    final dashProvider = context.read<DashboardProvider>();
+
+    try {
+      final paths = await importService.scanDocuments();
+      if (paths == null || paths.isEmpty) return; // User cancelled
+
+      if (!context.mounted) return;
+
+      // Determine category (null means Uncategorized)
+      final effectiveCategoryId = categoryId;
+      final metadata = await ImportMetadataDialog.show(
+        context,
+        initialTitle: 'Scanned Document',
+        initialCategoryId: effectiveCategoryId,
+      );
+      if (metadata == null) return; // User cancelled dialog
+
+      if (!context.mounted) return;
+
+      final title = metadata['title'] as String? ?? 'Scanned Document';
+      final selectedCategory = metadata['categoryId'] as String? ?? 'uncategorized';
+      final expiryDate = metadata['expiryDate'] as DateTime?;
+
+      // Show a brief loading indicator
+      _showLoading(context, 'Saving scanned document...');
+
+      final newDoc = await docProvider.createFromScan(
+        imagePaths: paths,
+        name: title,
+        categoryId: selectedCategory,
+      );
+
+      if (expiryDate != null) {
+        await docProvider.updateDocument(newDoc.copyWith(expiryDate: expiryDate));
+      }
+
+      if (context.mounted) {
+        Navigator.of(context, rootNavigator: true).pop(); // Dismiss loading
+        dashProvider.loadDashboard();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Scanned document saved successfully')),
+        );
+      }
+    } on ImportException catch (e) {
+      if (context.mounted) {
+        if (e.isPermanentlyDenied) {
+          _showPermissionDeniedDialog(context, e.message);
+        } else {
+          _showError(context, e.message);
+        }
+      }
+    } catch (e) {
+      if (context.mounted) {
+        try {
+          Navigator.of(context, rootNavigator: true).pop();
+        } catch (_) {}
+        _showError(context, 'Failed to scan document: $e');
+      }
+    }
+  }
+
+  void _showLoading(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => PopScope(
+        canPop: false,
+        child: AlertDialog(
+          content: Row(
+            children: [
+              const CircularProgressIndicator(),
+              const SizedBox(width: 24),
+              Expanded(child: Text(message)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Theme.of(context).colorScheme.error,
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _showPermissionDeniedDialog(BuildContext context, String message) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Permission Required'),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              openAppSettings();
+            },
+            child: const Text('Open Settings'),
+          ),
+        ],
       ),
     );
   }

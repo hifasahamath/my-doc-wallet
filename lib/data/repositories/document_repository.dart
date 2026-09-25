@@ -23,12 +23,32 @@ class DocumentRepository {
       LEFT JOIN categories c ON d.category_id = c.id
       ORDER BY $orderBy
     ''');
-    final docs = <Document>[];
-    for (final row in rows) {
-      final tags = await getTagsForDocument(row['id'] as String);
-      docs.add(Document.fromMap(row).copyWith(tags: tags));
+    return _mapRowsToDocuments(db, rows);
+  }
+
+  Future<List<Document>> _mapRowsToDocuments(Database db, List<Map<String, dynamic>> rows) async {
+    if (rows.isEmpty) return [];
+
+    // Bulk fetch tags to avoid N+1 queries
+    final docIds = rows.map((r) => "'${r['id']}'").join(',');
+    final tagsRows = await db.rawQuery('''
+      SELECT dt.document_id, t.name
+      FROM tags t
+      JOIN document_tags dt ON t.id = dt.tag_id
+      WHERE dt.document_id IN ($docIds)
+    ''');
+    
+    final tagsByDoc = <String, List<String>>{};
+    for (final row in tagsRows) {
+      final docId = row['document_id'] as String;
+      final tagName = row['name'] as String;
+      tagsByDoc.putIfAbsent(docId, () => []).add(tagName);
     }
-    return docs;
+
+    return rows.map((row) {
+      final docId = row['id'] as String;
+      return Document.fromMap(row).copyWith(tags: tagsByDoc[docId] ?? []);
+    }).toList();
   }
 
   Future<Document?> getById(String id) async {
@@ -53,12 +73,7 @@ class DocumentRepository {
       WHERE d.category_id = ?
       ORDER BY d.updated_at DESC
     ''', [categoryId]);
-    final docs = <Document>[];
-    for (final row in rows) {
-      final tags = await getTagsForDocument(row['id'] as String);
-      docs.add(Document.fromMap(row).copyWith(tags: tags));
-    }
-    return docs;
+    return _mapRowsToDocuments(db, rows);
   }
 
   Future<List<Document>> getFavorites() async {
@@ -70,7 +85,7 @@ class DocumentRepository {
       WHERE d.is_favorite = 1
       ORDER BY d.updated_at DESC
     ''');
-    return rows.map((r) => Document.fromMap(r)).toList();
+    return _mapRowsToDocuments(db, rows);
   }
 
   Future<List<Document>> getExpiringSoon(int withinDays) async {
@@ -86,7 +101,7 @@ class DocumentRepository {
         AND d.expiry_date <= ?
       ORDER BY d.expiry_date ASC
     ''', [now.toIso8601String().substring(0, 10), cutoff.toIso8601String().substring(0, 10)]);
-    return rows.map((r) => Document.fromMap(r)).toList();
+    return _mapRowsToDocuments(db, rows);
   }
 
   Future<List<Document>> getExpired() async {
@@ -99,7 +114,7 @@ class DocumentRepository {
       WHERE d.expiry_date IS NOT NULL AND d.expiry_date < ?
       ORDER BY d.expiry_date DESC
     ''', [now]);
-    return rows.map((r) => Document.fromMap(r)).toList();
+    return _mapRowsToDocuments(db, rows);
   }
 
   Future<void> insert(Document doc) async {

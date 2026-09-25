@@ -79,11 +79,20 @@ class _DocumentsListScreenState extends State<DocumentsListScreen> {
               padding: EdgeInsets.all(16.0),
               child: Text('Move to Category', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             ),
-            ...categories.map((c) => ListTile(
-              leading: Icon(Icons.folder, color: Color(c.color)),
-              title: Text(c.name),
-              onTap: () => Navigator.pop(context, c.id),
-            )),
+            Flexible(
+              child: ListView.builder(
+                shrinkWrap: true,
+                itemCount: categories.length,
+                itemBuilder: (context, index) {
+                  final c = categories[index];
+                  return ListTile(
+                    leading: Icon(Icons.folder, color: Color(c.color)),
+                    title: Text(c.name),
+                    onTap: () => Navigator.pop(context, c.id),
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),

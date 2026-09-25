@@ -31,7 +31,6 @@ class NotificationService {
 
     final daysUntil = doc.expiryDate!.difference(DateTime.now()).inDays;
     final reminders = <int>[
-      AppConstants.expiryWarning90,
       AppConstants.expiryWarning30,
       AppConstants.expiryWarning7,
       AppConstants.expiryWarning1,
@@ -72,7 +71,7 @@ class NotificationService {
 
   /// Cancel all reminders for a document.
   Future<void> cancelReminders(String documentId) async {
-    for (final days in [90, 30, 7, 1]) {
+    for (final days in [30, 7, 1]) {
       await _plugin.cancel(id: _notificationId(documentId, days));
     }
   }

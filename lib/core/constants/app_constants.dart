@@ -35,6 +35,9 @@ class AppConstants {
   static const String databaseName = 'mydocwallet.db';
   static const int databaseVersion = 1;
 
+  // Category order persistence key
+  static const String categoryOrderKey = 'mydocwallet_category_order';
+
   // Auto-lock options (seconds) — 0 = immediately, -1 = never
   static const Map<int, String> autoLockOptions = {
     0: 'Immediately',
@@ -45,13 +48,35 @@ class AppConstants {
     -1: 'Never',
   };
 
-  // Developer info
+  // ─────────────────────────────────────────────────────────────────────
+  // Developer information
+  //
+  // To update your personal information, edit ONLY the values below.
+  // The entire About screen references these constants, so changing a
+  // value here automatically updates every place it is displayed.
+  // ─────────────────────────────────────────────────────────────────────
+
+  /// Full name displayed in the About screen.
   static const String developerName = 'Hifas Ahamath';
+
+  /// Job title / role.
   static const String developerRole = 'Software Engineer';
-  static const String developerGithub = 'hifasahamath';
+
+  /// GitHub username (displayed as @handle).
+  static const String developerGithub = '@hifasahamath';
+
+  /// Full GitHub profile URL (opened when tapped).
   static const String developerGithubUrl = 'https://github.com/hifasahamath';
+
+  /// Phone number displayed next to the WhatsApp icon.
   static const String developerWhatsApp = '+94 77 560 5161';
+
+  /// WhatsApp deep-link URL (opened when tapped).
   static const String developerWhatsAppUrl = 'https://wa.me/94775605161';
+
+  /// Website text displayed next to the globe icon.
   static const String developerWebsite = 'www.hifasahamath.com';
-  static const String developerWebsiteUrl = 'http://www.hifasahamath.com';
+
+  /// Full website URL (opened when tapped).
+  static const String developerWebsiteUrl = 'https://www.hifasahamath.com';
 }

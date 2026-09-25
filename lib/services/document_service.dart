@@ -33,7 +33,7 @@ class DocumentService {
   }) async {
     final id = _uuid.v4();
     final ext = FileUtils.extension(sourcePath);
-    final fileType = FileUtils.isPdf(sourcePath) ? 'pdf' : 'image';
+    final fileType = ext.isNotEmpty ? ext.toLowerCase() : 'unknown';
     final destFilename = '$id.$ext';
     final sourceFile = File(sourcePath);
     final fileSize = await sourceFile.length();

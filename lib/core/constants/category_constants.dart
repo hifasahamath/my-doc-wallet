@@ -60,9 +60,9 @@ class CategoryConstants {
       color: 0xFF8D6E63,
     ),
     CategoryDefinition(
-      id: 'other',
-      name: 'Other',
-      iconName: 'folder',
+      id: 'uncategorized',
+      name: 'Uncategorized',
+      iconName: 'folder_open',
       color: 0xFF78909C,
     ),
   ];
