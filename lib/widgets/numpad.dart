@@ -40,7 +40,7 @@ class Numpad extends StatelessWidget {
   }
 
   Widget _buildNumpadButton(int row, int col, ThemeData theme) {
-    final btnSize = (76 * scaleFactor).clamp(64.0, 92.0);
+    final btnSize = (64 * scaleFactor).clamp(54.0, 76.0);
     
     if (row < 3) {
       final digit = row * 3 + col + 1;
@@ -62,7 +62,7 @@ class Numpad extends StatelessWidget {
         icon: Icon(
           Icons.backspace_outlined, 
           color: theme.colorScheme.onSurface, 
-          size: 28 * scaleFactor,
+          size: 24 * scaleFactor,
         ),
       ),
     );
@@ -72,14 +72,14 @@ class Numpad extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: FilledButton.tonal(
+      child: OutlinedButton(
         onPressed: enabled ? () => onDigit(digit) : null,
-        style: FilledButton.styleFrom(
+        style: OutlinedButton.styleFrom(
           shape: const CircleBorder(),
-          backgroundColor: theme.colorScheme.primary.withValues(alpha: 0.08),
+          backgroundColor: Colors.transparent,
           side: BorderSide(
-            color: theme.colorScheme.primary.withValues(alpha: 0.2), 
-            width: 1.5,
+            color: theme.colorScheme.outlineVariant, 
+            width: 1.0,
           ),
           padding: EdgeInsets.zero,
           elevation: 0,
@@ -87,9 +87,9 @@ class Numpad extends StatelessWidget {
         child: Text(
           '$digit',
           style: theme.textTheme.headlineMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            fontSize: 32 * scaleFactor,
-            color: theme.colorScheme.primary,
+            fontWeight: FontWeight.w400,
+            fontSize: 26 * scaleFactor,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ),
