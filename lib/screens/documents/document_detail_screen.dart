@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:pdfrx/pdfrx.dart';
+
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -129,46 +131,52 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
           ),
         ],
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Viewer area
-          Expanded(
-            flex: 3,
-            child: Container(
-              color: theme.colorScheme.surfaceContainerHighest,
-              child: _buildViewer(),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final isWide = constraints.maxWidth > 600;
+          final children = [
+            // Viewer area
+            Expanded(
+              flex: isWide ? 1 : 3,
+              child: Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                child: _buildViewer(),
+              ),
             ),
-          ),
-          
-          // Details area
-          Expanded(
-            flex: 2,
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                _buildInfoRow('Category', _document!.categoryName ?? 'Unknown'),
-                if (_document!.documentNumber != null && _document!.documentNumber!.isNotEmpty)
-                  _buildInfoRow('Document No.', _document!.documentNumber!),
-                if (_document!.issueDate != null)
-                  _buildInfoRow('Issue Date', AppDateUtils.formatDisplay(_document!.issueDate)),
-                if (_document!.expiryDate != null)
-                  _buildInfoRow('Expiry Date', AppDateUtils.formatDisplay(_document!.expiryDate), 
-                    subtitle: AppDateUtils.expiryDescription(_document!.expiryDate)),
-                if (_document!.notes != null && _document!.notes!.isNotEmpty)
-                  _buildInfoRow('Notes', _document!.notes!),
-                if (_document!.tags.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 8),
-                    child: Wrap(
-                      spacing: 8,
-                      children: _document!.tags.map((t) => Chip(label: Text(t))).toList(),
+            
+            // Details area
+            Expanded(
+              flex: isWide ? 1 : 2,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _buildInfoRow('Category', _document!.categoryName ?? 'Unknown'),
+                  if (_document!.documentNumber != null && _document!.documentNumber!.isNotEmpty)
+                    _buildInfoRow('Document No.', _document!.documentNumber!),
+                  if (_document!.issueDate != null)
+                    _buildInfoRow('Issue Date', AppDateUtils.formatDisplay(_document!.issueDate)),
+                  if (_document!.expiryDate != null)
+                    _buildInfoRow('Expiry Date', AppDateUtils.formatDisplay(_document!.expiryDate), 
+                      subtitle: AppDateUtils.expiryDescription(_document!.expiryDate)),
+                  if (_document!.notes != null && _document!.notes!.isNotEmpty)
+                    _buildInfoRow('Notes', _document!.notes!),
+                  if (_document!.tags.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                      child: Wrap(
+                        spacing: 8,
+                        children: _document!.tags.map((t) => Chip(label: Text(t))).toList(),
+                      ),
                     ),
-                  ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ];
+
+          return isWide 
+            ? Row(crossAxisAlignment: CrossAxisAlignment.stretch, children: children)
+            : Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: children);
+        },
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -191,16 +199,8 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
     final ft = _document!.fileType.toLowerCase();
     
     if (ft == 'pdf') {
-      // Placeholder indicating PDF is ready
-      return const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.picture_as_pdf, size: 64, color: Colors.red),
-            SizedBox(height: 16),
-            Text('PDF Ready for Viewing'),
-          ],
-        ),
+      return PdfViewer.file(
+        _tempFilePath!,
       );
     } else if (['jpg', 'jpeg', 'png', 'webp', 'bmp', 'gif', 'heic', 'heif'].contains(ft)) {
       return InteractiveViewer(

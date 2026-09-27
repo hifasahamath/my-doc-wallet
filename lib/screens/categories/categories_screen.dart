@@ -171,54 +171,62 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
   Widget _buildCategoryGrid(CategoryProvider provider, ThemeData theme) {
     return RefreshIndicator(
       onRefresh: () => provider.loadCategories(),
-      child: GridView.builder(
-        padding: const EdgeInsets.all(16).copyWith(bottom: 80),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          crossAxisSpacing: 12,
-          mainAxisSpacing: 12,
-          childAspectRatio: 1.1,
-        ),
-        itemCount: provider.categories.length,
-        itemBuilder: (context, index) {
-          final category = provider.categories[index];
-          final count = provider.getCount(category.id);
-
-          return Card(
-            child: InkWell(
-              onTap: () {
-                context.push('/category/${category.id}', extra: category.name);
-              },
-              borderRadius: BorderRadius.circular(16),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: Color(category.color).withAlpha(30),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Icon(Icons.folder, color: Color(category.color), size: 28),
-                    ),
-                    const Spacer(),
-                    Text(
-                      category.name,
-                      style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$count Document${count == 1 ? '' : 's'}',
-                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
-                    ),
-                  ],
-                ),
-              ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final crossAxisCount = width > 900 ? 4 : (width > 600 ? 3 : 2);
+          final aspectRatio = width < 340 ? 0.95 : 1.1;
+          
+          return GridView.builder(
+            padding: const EdgeInsets.all(16).copyWith(bottom: 80),
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: aspectRatio,
             ),
+            itemCount: provider.categories.length,
+            itemBuilder: (context, index) {
+              final category = provider.categories[index];
+              final count = provider.getCount(category.id);
+
+              return Card(
+                child: InkWell(
+                  onTap: () {
+                    context.push('/category/${category.id}', extra: category.name);
+                  },
+                  borderRadius: BorderRadius.circular(16),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: Color(category.color).withAlpha(30),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(Icons.folder, color: Color(category.color), size: 28),
+                        ),
+                        const Spacer(),
+                        Text(
+                          category.name,
+                          style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '$count Document${count == 1 ? '' : 's'}',
+                          style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
           );
         },
       ),

@@ -80,9 +80,16 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
             NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
           ],
         ),
-        floatingActionButton: FloatingActionButton(
+        floatingActionButton: FloatingActionButton.extended(
           onPressed: () => _showAddOptions(context),
-          child: const Icon(Icons.add),
+          label: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('Import', style: TextStyle(fontWeight: FontWeight.w600)),
+              SizedBox(width: 4),
+              Icon(Icons.add, size: 20),
+            ],
+          ),
         ),
       ),
     );
@@ -91,29 +98,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   void _showAddOptions(BuildContext context) {
     showModalBottomSheet(
       context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
       builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.document_scanner_outlined),
-              title: const Text('Scan Document'),
-              subtitle: const Text('Use camera to scan physical documents'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _handleScan(context, categoryId: null);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_upload_outlined),
-              title: const Text('Import File'),
-              subtitle: const Text('Import PDF or image from your device'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _handleImport(context, categoryId: null);
-              },
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                leading: const Icon(Icons.document_scanner_outlined, size: 32),
+                title: const Text('Scan Document', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Use camera to scan physical documents', style: TextStyle(fontSize: 14)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleScan(context, categoryId: null);
+                },
+              ),
+              const SizedBox(height: 8),
+              ListTile(
+                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+                leading: const Icon(Icons.file_upload_outlined, size: 32),
+                title: const Text('Import File', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
+                subtitle: const Text('Import PDF or image from your device', style: TextStyle(fontSize: 14)),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  _handleImport(context, categoryId: null);
+                },
+              ),
+            ],
+          ),
         ),
       ),
     );

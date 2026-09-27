@@ -49,42 +49,49 @@ class _DashboardTabState extends State<DashboardTab> {
             : ListView(
                 padding: const EdgeInsets.only(bottom: 80),
                 children: [
-                  // Stats grid
+                  // Stats grid — responsive
                   Padding(
                     padding: const EdgeInsets.all(16),
-                    child: GridView.count(
-                      crossAxisCount: 2,
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      mainAxisSpacing: 8,
-                      crossAxisSpacing: 8,
-                      childAspectRatio: 1.4,
-                      children: [
-                        StatCard(
-                          label: 'Total',
-                          count: dashboard.totalCount,
-                          icon: Icons.folder,
-                          color: theme.colorScheme.primary,
-                        ),
-                        StatCard(
-                          label: 'Active',
-                          count: dashboard.activeCount,
-                          icon: Icons.check_circle,
-                          color: AppTheme.activeColor,
-                        ),
-                        StatCard(
-                          label: 'Expiring Soon',
-                          count: dashboard.expiringCount,
-                          icon: Icons.schedule,
-                          color: AppTheme.expiringColor,
-                        ),
-                        StatCard(
-                          label: 'Expired',
-                          count: dashboard.expiredCount,
-                          icon: Icons.warning_amber,
-                          color: AppTheme.expiredColor,
-                        ),
-                      ],
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final width = constraints.maxWidth;
+                        final crossAxisCount = width > 600 ? 4 : 2;
+                        final aspectRatio = width > 600 ? 1.5 : (width < 340 ? 1.2 : 1.4);
+                        return GridView.count(
+                          crossAxisCount: crossAxisCount,
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          mainAxisSpacing: 8,
+                          crossAxisSpacing: 8,
+                          childAspectRatio: aspectRatio,
+                          children: [
+                            StatCard(
+                              label: 'Total',
+                              count: dashboard.totalCount,
+                              icon: Icons.folder,
+                              color: theme.colorScheme.primary,
+                            ),
+                            StatCard(
+                              label: 'Active',
+                              count: dashboard.activeCount,
+                              icon: Icons.check_circle,
+                              color: AppTheme.activeColor,
+                            ),
+                            StatCard(
+                              label: 'Expiring Soon',
+                              count: dashboard.expiringCount,
+                              icon: Icons.schedule,
+                              color: AppTheme.expiringColor,
+                            ),
+                            StatCard(
+                              label: 'Expired',
+                              count: dashboard.expiredCount,
+                              icon: Icons.warning_amber,
+                              color: AppTheme.expiredColor,
+                            ),
+                          ],
+                        );
+                      },
                     ),
                   ),
 

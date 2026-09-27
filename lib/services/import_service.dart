@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/services.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -69,7 +70,28 @@ class ImportService {
         );
       }
 
-      return file.path!;
+      String path = file.path!;
+      
+      // Android file picker sometimes caches files without extensions (e.g., from Drive).
+      // Append the original extension so the app can detect fileType correctly.
+      if (file.extension != null && file.extension!.isNotEmpty) {
+        final ext = file.extension!.toLowerCase();
+        if (!path.toLowerCase().endsWith('.$ext')) {
+          final newPath = '$path.$ext';
+          try {
+            await File(path).rename(newPath);
+            path = newPath;
+          } catch (_) {
+            // If rename fails, try copying
+            try {
+              await File(path).copy(newPath);
+              path = newPath;
+            } catch (_) {}
+          }
+        }
+      }
+
+      return path;
     } on PlatformException catch (e) {
       throw ImportException('File picker failed: ${e.message}');
     }

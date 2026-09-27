@@ -530,15 +530,20 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadDocuments,
-                  child: GridView.builder(
-                    padding: const EdgeInsets.all(16).copyWith(bottom: 80),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                      childAspectRatio: 0.8,
-                    ),
-                    itemCount: _documents.length,
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final width = constraints.maxWidth;
+                      final crossAxisCount = width > 900 ? 4 : (width > 600 ? 3 : 2);
+                      final aspectRatio = width < 340 ? 0.75 : 0.8;
+                      return GridView.builder(
+                        padding: const EdgeInsets.all(16).copyWith(bottom: 80),
+                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: crossAxisCount,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                          childAspectRatio: aspectRatio,
+                        ),
+                        itemCount: _documents.length,
                     itemBuilder: (context, index) {
                       final doc = _documents[index];
                       final isSelected = _selectedIds.contains(doc.id);
@@ -562,6 +567,8 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
                           await context.read<DocumentProvider>().toggleFavorite(doc.id, !doc.isFavorite);
                           _loadDocuments();
                         },
+                      );
+                    },
                       );
                     },
                   ),

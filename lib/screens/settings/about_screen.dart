@@ -24,15 +24,15 @@ class _AboutScreenState extends State<AboutScreen> {
   Future<void> _loadVersion() async {
     final info = await PackageInfo.fromPlatform();
     setState(() {
-      _version = 'Version ${info.version} (Build ${info.buildNumber})';
+      _version = 'Version ${info.version}';
     });
   }
 
   Future<void> _launchUrl(String urlString) async {
     final url = Uri.parse(urlString);
-    if (await canLaunchUrl(url)) {
+    try {
       await launchUrl(url, mode: LaunchMode.externalApplication);
-    } else {
+    } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not open $urlString')),

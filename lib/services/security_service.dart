@@ -1,7 +1,6 @@
 import 'dart:convert';
 
 import 'package:crypto/crypto.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:local_auth/local_auth.dart';
 
@@ -75,7 +74,7 @@ class SecurityService {
   Future<bool> isBiometricAvailable() async {
     try {
       return await _localAuth.canCheckBiometrics || await _localAuth.isDeviceSupported();
-    } on PlatformException {
+    } catch (e) {
       return false;
     }
   }
@@ -101,7 +100,7 @@ class SecurityService {
         await _unlock();
       }
       return authenticated;
-    } on PlatformException {
+    } catch (e) {
       return false;
     }
   }
