@@ -61,6 +61,7 @@ class DatabaseHelper {
         file_size INTEGER,
         created_at TEXT NOT NULL,
         updated_at TEXT NOT NULL,
+        imported_at TEXT,
         FOREIGN KEY (category_id) REFERENCES categories(id)
       )
     ''');
@@ -168,7 +169,9 @@ class DatabaseHelper {
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
-    // Future migrations go here.
+    if (oldVersion < 2) {
+      await db.execute('ALTER TABLE documents ADD COLUMN imported_at TEXT');
+    }
   }
 
   Future<void> close() async {

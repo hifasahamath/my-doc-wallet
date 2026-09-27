@@ -5,6 +5,7 @@ class AppDateUtils {
   AppDateUtils._();
 
   static final DateFormat displayFormat = DateFormat('dd MMM yyyy');
+  static final DateFormat dateTimeDisplayFormat = DateFormat('dd MMM yyyy, h:mm a');
   static final DateFormat isoFormat = DateFormat('yyyy-MM-dd');
 
   /// Days until [expiryDate]. Negative if expired.
@@ -41,6 +42,12 @@ class AppDateUtils {
   static String formatDisplay(DateTime? date, {String fallback = '—'}) {
     if (date == null) return fallback;
     return displayFormat.format(date);
+  }
+
+  /// Format a [DateTime] with time for display, or return a fallback.
+  static String formatDateTimeDisplay(DateTime? date, {String fallback = '—'}) {
+    if (date == null) return fallback;
+    return dateTimeDisplayFormat.format(date);
   }
 
   /// Format a [DateTime] as ISO 8601 date string for storage.

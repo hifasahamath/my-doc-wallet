@@ -19,6 +19,7 @@ class Document {
   final int? fileSize;
   final DateTime createdAt;
   final DateTime updatedAt;
+  final DateTime importedAt;
 
   // Transient — populated after query joins
   final String? categoryName;
@@ -42,6 +43,7 @@ class Document {
     this.fileSize,
     required this.createdAt,
     required this.updatedAt,
+    required this.importedAt,
     this.categoryName,
     this.tags = const [],
   });
@@ -66,6 +68,7 @@ class Document {
         'file_size': fileSize,
         'created_at': createdAt.toIso8601String(),
         'updated_at': updatedAt.toIso8601String(),
+        'imported_at': importedAt.toIso8601String(),
       };
 
   factory Document.fromMap(Map<String, dynamic> map) => Document(
@@ -86,6 +89,9 @@ class Document {
         fileSize: map['file_size'] as int?,
         createdAt: DateTime.parse(map['created_at'] as String),
         updatedAt: DateTime.parse(map['updated_at'] as String),
+        importedAt: map['imported_at'] != null 
+            ? DateTime.parse(map['imported_at'] as String) 
+            : DateTime.parse(map['created_at'] as String),
         categoryName: map['category_name'] as String?,
       );
 
@@ -105,6 +111,7 @@ class Document {
     int? pageCount,
     int? fileSize,
     DateTime? updatedAt,
+    DateTime? importedAt,
     String? categoryName,
     List<String>? tags,
     bool clearExpiryDate = false,
@@ -128,6 +135,7 @@ class Document {
         fileSize: fileSize ?? this.fileSize,
         createdAt: createdAt,
         updatedAt: updatedAt ?? this.updatedAt,
+        importedAt: importedAt ?? this.importedAt,
         categoryName: categoryName ?? this.categoryName,
         tags: tags ?? this.tags,
       );

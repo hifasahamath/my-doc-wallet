@@ -64,6 +64,7 @@ class DocumentService {
       fileSize: fileSize,
       createdAt: now,
       updatedAt: now,
+      importedAt: now,
     );
 
     await _repo.insert(doc);
@@ -113,6 +114,7 @@ class DocumentService {
       fileSize: pdfBytes.length,
       createdAt: now,
       updatedAt: now,
+      importedAt: now,
     );
 
     await _repo.insert(doc);

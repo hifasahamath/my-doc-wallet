@@ -158,6 +158,7 @@ class _DocumentDetailScreenState extends State<DocumentDetailScreen> {
                   if (_document!.expiryDate != null)
                     _buildInfoRow('Expiry Date', AppDateUtils.formatDisplay(_document!.expiryDate), 
                       subtitle: AppDateUtils.expiryDescription(_document!.expiryDate)),
+                  _buildInfoRow('Imported on', AppDateUtils.formatDateTimeDisplay(_document!.importedAt.toLocal())),
                   if (_document!.notes != null && _document!.notes!.isNotEmpty)
                     _buildInfoRow('Notes', _document!.notes!),
                   if (_document!.tags.isNotEmpty)

@@ -33,7 +33,7 @@ class AppConstants {
 
   // Database
   static const String databaseName = 'mydocwallet.db';
-  static const int databaseVersion = 1;
+  static const int databaseVersion = 2;
 
   // Category order persistence key
   static const String categoryOrderKey = 'mydocwallet_category_order';
