@@ -92,20 +92,14 @@ class _ImportMetadataDialogState extends State<ImportMetadataDialog> {
             ),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
-              initialValue: _selectedCategoryId,
+              initialValue: _selectedCategoryId ?? 'uncategorized',
               decoration: const InputDecoration(labelText: 'Category (Optional)'),
-              items: [
-                const DropdownMenuItem(
-                  value: null,
-                  child: Text('Uncategorized'),
+              items: categories.map(
+                (c) => DropdownMenuItem(
+                  value: c.id,
+                  child: Text(c.name),
                 ),
-                ...categories.where((c) => c.id != 'uncategorized').map(
-                      (c) => DropdownMenuItem(
-                        value: c.id,
-                        child: Text(c.name),
-                      ),
-                    ),
-              ],
+              ).toList(),
               onChanged: (val) => setState(() => _selectedCategoryId = val),
             ),
             const SizedBox(height: 16),

@@ -12,6 +12,7 @@ import 'package:my_doc_wallet/services/import_service.dart';
 import 'package:my_doc_wallet/widgets/document_grid_card.dart';
 import 'package:my_doc_wallet/widgets/empty_state.dart';
 import 'package:my_doc_wallet/widgets/import_metadata_dialog.dart';
+import 'package:my_doc_wallet/widgets/import_options_widget.dart';
 
 /// Screen listing documents for a specific category.
 class CategoryDocumentsScreen extends StatefulWidget {
@@ -251,33 +252,12 @@ class _CategoryDocumentsScreenState extends State<CategoryDocumentsScreen> {
   }
 
   void _showAddOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      builder: (ctx) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            ListTile(
-              leading: const Icon(Icons.document_scanner_outlined),
-              title: const Text('Scan Document'),
-              subtitle: const Text('Scan and save into this category'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _handleScan(context);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.file_upload_outlined),
-              title: const Text('Import File'),
-              subtitle: const Text('Import PDF/image into this category'),
-              onTap: () {
-                Navigator.pop(ctx);
-                _handleImport(context);
-              },
-            ),
-          ],
-        ),
-      ),
+    ImportOptionsWidget.show(
+      context,
+      categoryId: widget.categoryId,
+      categoryName: _displayName,
+      onScan: () => _handleScan(context),
+      onImport: () => _handleImport(context),
     );
   }
 

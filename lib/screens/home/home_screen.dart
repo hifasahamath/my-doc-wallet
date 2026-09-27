@@ -13,6 +13,7 @@ import 'package:my_doc_wallet/screens/categories/categories_screen.dart';
 import 'package:my_doc_wallet/screens/settings/settings_screen.dart';
 import 'package:my_doc_wallet/services/import_service.dart';
 import 'package:my_doc_wallet/widgets/import_metadata_dialog.dart';
+import 'package:my_doc_wallet/widgets/import_options_widget.dart';
 
 /// Main shell with bottom navigation.
 class HomeScreen extends StatefulWidget {
@@ -96,42 +97,10 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   }
 
   void _showAddOptions(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) => SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 24.0, horizontal: 8.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                leading: const Icon(Icons.document_scanner_outlined, size: 32),
-                title: const Text('Scan Document', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                subtitle: const Text('Use camera to scan physical documents', style: TextStyle(fontSize: 14)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _handleScan(context, categoryId: null);
-                },
-              ),
-              const SizedBox(height: 8),
-              ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                leading: const Icon(Icons.file_upload_outlined, size: 32),
-                title: const Text('Import File', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-                subtitle: const Text('Import PDF or image from your device', style: TextStyle(fontSize: 14)),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  _handleImport(context, categoryId: null);
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
+    ImportOptionsWidget.show(
+      context,
+      onScan: () => _handleScan(context, categoryId: null),
+      onImport: () => _handleImport(context, categoryId: null),
     );
   }
 
