@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:my_doc_wallet/core/constants/app_constants.dart';
 import 'package:my_doc_wallet/providers/auth_provider.dart';
+import 'package:my_doc_wallet/widgets/numpad.dart';
 
 /// First-time PIN setup screen.
 class SetupPinScreen extends StatefulWidget {
@@ -134,58 +135,10 @@ class _SetupPinScreenState extends State<SetupPinScreen> {
   }
 
   Widget _buildNumpad(ThemeData theme, double scaleFactor) {
-    final hPadding = (32 * scaleFactor).clamp(16.0, 56.0);
-    return Padding(
-      padding: EdgeInsets.symmetric(horizontal: hPadding),
-      child: Column(
-        children: [
-          for (var row = 0; row < 4; row++)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (var col = 0; col < 3; col++)
-                  _buildNumpadButton(row, col, theme, scaleFactor),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNumpadButton(int row, int col, ThemeData theme, double scaleFactor) {
-    final btnWidth = (64 * scaleFactor).clamp(48.0, 80.0);
-    final btnHeight = (54 * scaleFactor).clamp(42.0, 68.0);
-    if (row < 3) {
-      final digit = row * 3 + col + 1;
-      return _digitButton(digit, theme, btnWidth, btnHeight, scaleFactor);
-    }
-    if (col == 0) return SizedBox(width: btnWidth, height: btnHeight);
-    if (col == 1) return _digitButton(0, theme, btnWidth, btnHeight, scaleFactor);
-    return SizedBox(
-      width: btnWidth,
-      height: btnHeight,
-      child: IconButton(
-        onPressed: _onBackspace,
-        icon: Icon(Icons.backspace_outlined, color: theme.colorScheme.onSurface, size: 22 * scaleFactor),
-      ),
-    );
-  }
-
-  Widget _digitButton(int digit, ThemeData theme, double width, double height, double scaleFactor) {
-    return SizedBox(
-      width: width,
-      height: height,
-      child: TextButton(
-        onPressed: () => _onDigit(digit),
-        style: TextButton.styleFrom(shape: const CircleBorder()),
-        child: Text(
-          '$digit',
-          style: theme.textTheme.headlineSmall?.copyWith(
-            fontWeight: FontWeight.w500,
-            fontSize: 22 * scaleFactor,
-          ),
-        ),
-      ),
+    return Numpad(
+      onDigit: _onDigit,
+      onBackspace: _onBackspace,
+      scaleFactor: scaleFactor,
     );
   }
 }

@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 import 'package:my_doc_wallet/core/constants/app_constants.dart';
 import 'package:my_doc_wallet/providers/auth_provider.dart';
+import 'package:my_doc_wallet/widgets/numpad.dart';
 
 /// Screen to change the user's PIN.
 class ChangePinScreen extends StatefulWidget {
@@ -159,57 +160,14 @@ class _ChangePinScreenState extends State<ChangePinScreen> {
               Text(_error!, style: TextStyle(color: theme.colorScheme.error, fontSize: 14)),
             ],
             const Spacer(flex: 1),
-            _buildNumpad(theme),
+            Numpad(
+              onDigit: _onDigit,
+              onBackspace: _onBackspace,
+              enabled: !_loading,
+            ),
             const SizedBox(height: 48),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildNumpad(ThemeData theme) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 48),
-      child: Column(
-        children: [
-          for (var row = 0; row < 4; row++)
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                for (var col = 0; col < 3; col++)
-                  _buildNumpadButton(row, col, theme),
-              ],
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNumpadButton(int row, int col, ThemeData theme) {
-    if (row < 3) {
-      final digit = row * 3 + col + 1;
-      return _digitButton(digit, theme);
-    }
-    if (col == 0) return const SizedBox(width: 72, height: 60);
-    if (col == 1) return _digitButton(0, theme);
-    return SizedBox(
-      width: 72,
-      height: 60,
-      child: IconButton(
-        onPressed: _loading ? null : _onBackspace,
-        icon: Icon(Icons.backspace_outlined, color: theme.colorScheme.onSurface),
-      ),
-    );
-  }
-
-  Widget _digitButton(int digit, ThemeData theme) {
-    return SizedBox(
-      width: 72,
-      height: 60,
-      child: TextButton(
-        onPressed: _loading ? null : () => _onDigit(digit),
-        style: TextButton.styleFrom(shape: const CircleBorder()),
-        child: Text('$digit', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w500)),
       ),
     );
   }
