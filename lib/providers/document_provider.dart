@@ -89,6 +89,30 @@ class DocumentProvider extends ChangeNotifier {
     return docs;
   }
 
+  Future<List<Document>> getAllDocuments() async {
+    final docs = await _repo.getAll();
+    _applySort(docs);
+    return docs;
+  }
+
+  Future<List<Document>> getActiveDocuments() async {
+    final docs = await _repo.getActive();
+    _applySort(docs);
+    return docs;
+  }
+
+  Future<List<Document>> getExpiringSoonDocuments(int days) async {
+    final docs = await _repo.getExpiringSoon(days);
+    _applySort(docs);
+    return docs;
+  }
+
+  Future<List<Document>> getExpiredDocuments() async {
+    final docs = await _repo.getExpired();
+    _applySort(docs);
+    return docs;
+  }
+
   Future<Document> importFile({
     required String sourcePath,
     required String name,

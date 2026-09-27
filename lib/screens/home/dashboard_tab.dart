@@ -70,24 +70,28 @@ class _DashboardTabState extends State<DashboardTab> {
                               count: dashboard.totalCount,
                               icon: Icons.folder,
                               color: theme.colorScheme.primary,
+                              onTap: () => context.push('/status/total'),
                             ),
                             StatCard(
                               label: 'Active',
                               count: dashboard.activeCount,
                               icon: Icons.check_circle,
                               color: AppTheme.activeColor,
+                              onTap: () => context.push('/status/active'),
                             ),
                             StatCard(
                               label: 'Expiring Soon',
                               count: dashboard.expiringCount,
                               icon: Icons.schedule,
                               color: AppTheme.expiringColor,
+                              onTap: () => context.push('/status/expiring_soon'),
                             ),
                             StatCard(
                               label: 'Expired',
                               count: dashboard.expiredCount,
                               icon: Icons.warning_amber,
                               color: AppTheme.expiredColor,
+                              onTap: () => context.push('/status/expired'),
                             ),
                           ],
                         );

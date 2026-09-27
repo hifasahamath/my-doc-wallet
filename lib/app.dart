@@ -7,6 +7,7 @@ import 'package:my_doc_wallet/providers/auth_provider.dart';
 import 'package:my_doc_wallet/providers/settings_provider.dart';
 import 'package:my_doc_wallet/screens/auth/lock_screen.dart';
 import 'package:my_doc_wallet/screens/auth/setup_pin_screen.dart';
+import 'package:my_doc_wallet/screens/documents/status_documents_screen.dart';
 import 'package:my_doc_wallet/screens/home/home_screen.dart';
 import 'package:my_doc_wallet/screens/documents/document_detail_screen.dart';
 import 'package:my_doc_wallet/screens/documents/add_edit_document_screen.dart';
@@ -98,6 +99,11 @@ class _MyDocWalletAppState extends State<MyDocWalletApp> {
           path: '/document/:id',
           builder: (context, state) =>
               DocumentDetailScreen(documentId: state.pathParameters['id']!),
+        ),
+        GoRoute(
+          path: '/status/:status',
+          builder: (context, state) =>
+              StatusDocumentsScreen(status: state.pathParameters['status']!),
         ),
         GoRoute(
           path: '/about',

@@ -117,6 +117,19 @@ class DocumentRepository {
     return _mapRowsToDocuments(db, rows);
   }
 
+  Future<List<Document>> getActive() async {
+    final db = await _db;
+    final now = DateTime.now().toIso8601String().substring(0, 10);
+    final rows = await db.rawQuery('''
+      SELECT d.*, c.name AS category_name
+      FROM documents d
+      LEFT JOIN categories c ON d.category_id = c.id
+      WHERE d.expiry_date IS NULL OR d.expiry_date >= ?
+      ORDER BY d.updated_at DESC
+    ''', [now]);
+    return _mapRowsToDocuments(db, rows);
+  }
+
   Future<void> insert(Document doc) async {
     final db = await _db;
     await db.insert('documents', doc.toMap());
